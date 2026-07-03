@@ -1,0 +1,19 @@
+# Raw source recordings (bulky zips - keep local, not in repo)
+raw_exports/
+
+# Python environments
+.venv/
+venv/
+env/
+
+# Python caches / compiled files
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS / editor cruft
+.DS_Store
+.vscode/
