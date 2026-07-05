@@ -86,6 +86,21 @@ def segment_labels(n_samples, order, fs=TARGET_HZ):
     return lab
 
 
+def segment_labels_from_durs(n_samples, segs, fs=TARGET_HZ):
+    """Per-sample ids from explicit [(activity, seconds), ...] segments.
+    The final segment absorbs any rounding remainder so it always reaches the end."""
+    lab = np.empty(n_samples, dtype=int)
+    pos = 0
+    for i, (act, dur) in enumerate(segs):
+        cnt = n_samples - pos if i == len(segs) - 1 else int(round(float(dur) * fs))
+        cnt = max(0, min(cnt, n_samples - pos))
+        lab[pos:pos + cnt] = ACT2ID[act]
+        pos += cnt
+    if pos < n_samples:
+        lab[pos:] = ACT2ID[segs[-1][0]]
+    return lab
+
+
 def window_labels(sample_labels, win=WIN_LEN, hop=HOP):
     """Majority label per window + a 'pure' flag (window spans a single activity)."""
     y, pure = [], []
@@ -114,12 +129,15 @@ def process_train(raw_dir):
     return clips
 
 
-def process_test(test_dir, order):
+def process_test(test_dir, order, segments=None):
     sessions = []
     for f in sorted(Path(test_dir).glob("*.csv")):
         df = pd.read_csv(f)
         _, X = resample_uniform(trim(df, max_s=1e9))     # don't trim test sessions
-        slab = segment_labels(len(X), order)
+        if segments and f.name in segments:
+            slab = segment_labels_from_durs(len(X), segments[f.name])
+        else:
+            slab = segment_labels(len(X), order)
         W = make_windows(X)
         y, pure = window_labels(slab)
         sessions.append(dict(name=f.name, fs_src=int(df["fs_hz"].iloc[0]),
@@ -183,13 +201,21 @@ def main():
     ap.add_argument("--out", default="data/processed")
     ap.add_argument("--plots", default="plots")
     ap.add_argument("--test-order", default="standing,walking,jumping,still")
+    ap.add_argument("--test-segments", default=None,
+                    help="optional JSON {filename: [[activity, seconds], ...]} "
+                         "for exact per-session boundaries")
     a = ap.parse_args()
 
     order = [s.strip() for s in a.test_order.split(",")]
     assert set(order) == set(STATES), f"test-order must be a permutation of {STATES}"
 
+    segments = None
+    if a.test_segments:
+        import json
+        segments = json.load(open(a.test_segments))
+
     train = process_train(a.raw)
-    test = process_test(a.test, order)
+    test = process_test(a.test, order, segments)
     Path(a.out).mkdir(parents=True, exist_ok=True)
     with open(Path(a.out) / "train.pkl", "wb") as fh:
         pickle.dump(dict(clips=train, states=STATES, channels=CHANNELS,
