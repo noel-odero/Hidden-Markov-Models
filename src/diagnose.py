@@ -66,7 +66,7 @@ def main():
 
     for s in feats["test"]:
         X, y = s["F"], s["y"]
-        print(f"\n===== {s['name']}  ({len(X)} windows) =====")
+        print(f"\n{s['name']} ({len(X)} windows)")
         print("ASSUMED labels :", rle(y, states))
         print("EMISSION (sup) :", rle(emission_argmax(sup, X), states))
         print("VITERBI  (sup) :", rle(sup.viterbi(X), states))

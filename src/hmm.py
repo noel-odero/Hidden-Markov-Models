@@ -277,7 +277,7 @@ def main():
     print(f"Post-BW training accuracy:         {np.mean(bw_paths==init_true):.3f}")
 
     v = validate_against_hmmlearn(model, seqs)
-    print("\n=== Validation vs hmmlearn (same parameters) ===")
+    print("\nValidation vs hmmlearn (same parameters):")
     print(f"our logL = {v['our_ll']:.4f}   hmmlearn logL = {v['ref_ll']:.4f}   "
           f"|diff| = {v['ll_diff']:.2e}")
     print(f"Viterbi path agreement = {v['path_agreement']*100:.2f}%")

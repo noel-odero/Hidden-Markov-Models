@@ -142,7 +142,7 @@ def main():
     train_F = featurize(train["clips"], fs)
     test_F = featurize(test["sessions"], fs)
 
-    print("=== Per-activity mean of each RAW feature (separability check) ===")
+    print("Per-activity mean of each RAW feature (separability check):")
     print(separability_table(train_F, states).to_string())
 
     mean, std = fit_scaler(train_F)

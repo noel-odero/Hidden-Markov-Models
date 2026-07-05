@@ -69,7 +69,7 @@ def report(name, model, sessions, states):
     K = len(states)
     yt, yp, pure, per_sess = decode_sessions(model, sessions)
 
-    print(f"\n########## {name} ##########")
+    print(f"\n{name}")
     for sname, acc in per_sess:
         print(f"  {sname}: overall window accuracy = {acc:.3f}")
     all_acc = float(np.mean(yt == yp))
@@ -119,6 +119,28 @@ def save_emissions(model, states, feat_names, path):
     fig.tight_layout(); fig.savefig(path, dpi=150); plt.close(fig)
 
 
+def save_decoded_timeline(model, sessions, states, path, hop_seconds=1.0):
+    """Per test session: true vs Viterbi-decoded activity over time."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    fig, axes = plt.subplots(len(sessions), 1, figsize=(10, 2.6 * len(sessions)), squeeze=False)
+    for ax, s in zip(axes[:, 0], sessions):
+        pred = model.viterbi(s["F"])
+        t = np.arange(len(pred)) * hop_seconds
+        ax.step(t, s["y"], where="post", label="true", color="tab:gray", linewidth=2.5)
+        ax.step(t, pred, where="post", label="predicted", color="tab:red",
+                linewidth=1.3, linestyle="--")
+        ax.set_yticks(range(len(states))); ax.set_yticklabels(states)
+        ax.set_ylabel(s["name"])
+    axes[-1, 0].set_xlabel("time (s)")
+    axes[0, 0].legend(loc="upper right", fontsize=8)
+    fig.suptitle("Decoded activity sequence: true vs Viterbi-predicted")
+    fig.tight_layout()
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--proc", default="data/processed")
@@ -147,12 +169,11 @@ def main():
     cm_bw, bw_all, bw_pure, rows_bw, overall_bw = report(
         "BAUM-WELCH-REFINED MODEL", bw, sessions, states)
 
-    # figures use the BW model (the trained deliverable); swap to sup if it wins
     save_confusion(cm_bw, states, plots / "confusion_matrix.png")
     save_emissions(bw, states, feat_names, plots / "emission_means.png")
-    print(f"\nSaved: {plots/'confusion_matrix.png'}, {plots/'emission_means.png'}")
-    print("\n(If the supervised model clearly wins on test, tell me and I'll "
-          "regenerate the confusion/emission figures from it for the report.)")
+    save_decoded_timeline(bw, sessions, states, plots / "decoded_timeline.png")
+    print(f"\nSaved: {plots/'confusion_matrix.png'}, {plots/'emission_means.png'}, "
+          f"{plots/'decoded_timeline.png'}")
 
 
 if __name__ == "__main__":

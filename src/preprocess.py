@@ -181,7 +181,7 @@ def plot_samples(raw_dir, plots_dir):
 
 
 def summarize(train, test):
-    print("\n=== Windowing summary ===")
+    print("\nWindowing summary:")
     print(f"Window: {WIN_LEN} samples = {WIN_SECONDS}s @ {TARGET_HZ}Hz, "
           f"hop {HOP} ({int(OVERLAP*100)}% overlap)")
     per_act = {a: 0 for a in STATES}
